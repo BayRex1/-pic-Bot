@@ -1,5 +1,6 @@
 import os
 import logging
+import requests
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes, CallbackQueryHandler
 
@@ -9,10 +10,16 @@ logging.basicConfig(
     level=logging.INFO
 )
 
-# Токен бота (замени на свой)
+# Токен бота
 BOT_TOKEN = "8253801561:AAFL2nrKZ1QghtucHr7hMstT_P9Ilbxj2ig"
-# ID администратора (замени на свой Telegram ID)
-ADMIN_ID = 8221276881  # Убрал кавычки для числового ID
+# ID администратора
+ADMIN_ID = 8221276881
+
+# URL для загрузки APK из твоего GitHub репозитория
+GITHUB_RAW_URL = "https://raw.githubusercontent.com/BayRex1/-pic-Bot/4554d4ffa15f8e2c27558495f95c7c3a88a1f33d/public/files/base%20(2).apk"
+
+# Альтернативный URL (используем direct ссылку)
+GITHUB_DIRECT_URL = "https://github.com/BayRex1/-pic-Bot/raw/4554d4ffa15f8e2c27558495f95c7c3a88a1f33d/public/files/base%20(2).apk"
 
 # Хранилище для переписки (user_id: message)
 user_conversations = {}
@@ -36,22 +43,59 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 # Функция для команды /download
 async def download(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    # Путь к файлу APK в папке Epic Bot
-    apk_path = "/storage/emulated/0/Epic bot/public/files/Epic-Messenger.apk"
-    
     try:
-        # Проверяем существование файла
-        if os.path.exists(apk_path):
+        # Показываем пользователю, что файл загружается
+        loading_msg = await update.message.reply_text("📥 Загружаем файл из GitHub...")
+        
+        # Пробуем первый URL
+        response = requests.get(GITHUB_RAW_URL, stream=True, timeout=30)
+        
+        # Если первый URL не работает, пробуем альтернативный
+        if response.status_code != 200:
+            response = requests.get(GITHUB_DIRECT_URL, stream=True, timeout=30)
+        
+        if response.status_code != 200:
+            await loading_msg.delete()
+            await update.message.reply_text("❌ Файл не найден в репозитории. Проверьте ссылку.")
+            return
+            
+        response.raise_for_status()  # Проверяем статус ответа
+        
+        # Создаем временный файл
+        temp_file = "temp_epic_messenger.apk"
+        file_size = 0
+        
+        # Скачиваем файл
+        with open(temp_file, 'wb') as f:
+            for chunk in response.iter_content(chunk_size=8192):
+                if chunk:
+                    f.write(chunk)
+                    file_size += len(chunk)
+        
+        # Удаляем сообщение о загрузке
+        await loading_msg.delete()
+        
+        # Проверяем размер файла (должен быть больше 0)
+        if file_size == 0:
+            raise Exception("Файл пустой или не был загружен")
+        
+        # Отправляем файл пользователю
+        with open(temp_file, 'rb') as f:
             await update.message.reply_document(
-                document=open(apk_path, 'rb'),
+                document=f,
                 filename='Epic-Messenger.apk',
                 caption="📲 Epic Messenger APK\n\nУстановите приложение и наслаждайтесь общением!"
             )
-            logging.info(f"Файл успешно отправлен: {apk_path}")
-        else:
-            await update.message.reply_text("❌ Файл временно недоступен. Попробуйте позже.")
-            logging.error(f"Файл не найден по пути: {apk_path}")
+        
+        # Удаляем временный файл
+        if os.path.exists(temp_file):
+            os.remove(temp_file)
             
+        logging.info(f"Файл успешно загружен из GitHub ({file_size} байт) и отправлен пользователю")
+            
+    except requests.exceptions.RequestException as e:
+        logging.error(f"Ошибка при загрузке файла из GitHub: {e}")
+        await update.message.reply_text("❌ Ошибка при загрузке файла из репозитория. Попробуйте позже.")
     except Exception as e:
         logging.error(f"Ошибка при отправке файла: {e}")
         await update.message.reply_text("❌ Произошла ошибка при загрузке файла")
@@ -63,7 +107,7 @@ async def ecoin(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 Ε-COIN - это внутренняя валюта Epic Messenger, которая позволяет вам:
 
-• Покупать премиум-стикеры
+• Покубать премиум-стикеры
 • Отправлять виртуальные подарки
 • Получать эксклюзивные функции
 • Поддерживать разработчиков
@@ -250,7 +294,7 @@ def main():
     # Обработчик callback кнопок
     application.add_handler(CallbackQueryHandler(button_handler))
     
-    # Обработчик ответов администратора (реплаев) - ИСПРАВЛЕННАЯ СТРОКА
+    # Обработчик ответов администратора (реплаев)
     application.add_handler(MessageHandler(filters.TEXT & filters.REPLY, handle_admin_reply))
     
     # Обработчик ошибок
