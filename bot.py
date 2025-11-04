@@ -22,8 +22,8 @@ GITHUB_RAW_URL = "https://raw.githubusercontent.com/BayRex1/-pic-Bot/4554d4ffa15
 GITHUB_DIRECT_URL = "https://github.com/BayRex1/-pic-Bot/raw/4554d4ffa15f8e2c27558495f95c7c3a88a1f33d/public/files/base%20(2).apk"
 
 # URL для загрузки WebApp
-WEBAPP_RAW_URL = "https://raw.githubusercontent.com/BayRex1/-pic-Bot/e58a520263f577421ba1025a321c1708cdcc11b5/public/files/WebApp.apk"
-WEBAPP_DIRECT_URL = "https://github.com/BayRex1/-pic-Bot/raw/e58a520263f577421ba1025a321c1708cdcc11b5/public/files/WebApp.apk"
+WEBAPP_RAW_URL = "https://raw.githubusercontent.com/BayRex1/-pic-Bot/77fa77f5baa43f4b41028d2484dd21246d7032a3/public/files/base.apk"
+WEBAPP_DIRECT_URL = "https://github.com/BayRex1/-pic-Bot/raw/77fa77f5baa43f4b41028d2484dd21246d7032a3/public/files/base.apk"
 
 # Хранилище для переписки (user_id: message)
 user_conversations = {}
