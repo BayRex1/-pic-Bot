@@ -37,7 +37,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 Доступные команды:
 /start - показать это сообщение
 /download - скачать Epic Messenger APK
-/webapp - скачать WebApp версию
+/webapp - скачать WebApp для запуска как приложение 
 /payment - помочь в развитии Epic Messenger
 /help - связаться с поддержкой
 
@@ -147,7 +147,7 @@ async def webapp(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await update.message.reply_document(
                 document=f,
                 filename='Epic-Messenger-WebApp.apk',
-                caption="🌐 Epic Messenger WebApp\n\nВеб-версия приложения для удобного использования!"
+                caption="🌐 Epic Messenger WebApp\n\nВеб-версия приложения для открытия как приложение!"
             )
         
         # Удаляем временный файл
