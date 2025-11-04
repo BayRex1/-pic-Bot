@@ -21,6 +21,10 @@ GITHUB_RAW_URL = "https://raw.githubusercontent.com/BayRex1/-pic-Bot/4554d4ffa15
 # Альтернативный URL (используем direct ссылку)
 GITHUB_DIRECT_URL = "https://github.com/BayRex1/-pic-Bot/raw/4554d4ffa15f8e2c27558495f95c7c3a88a1f33d/public/files/base%20(2).apk"
 
+# URL для загрузки WebApp
+WEBAPP_RAW_URL = "https://raw.githubusercontent.com/BayRex1/-pic-Bot/e58a520263f577421ba1025a321c1708cdcc11b5/public/files/WebApp.apk"
+WEBAPP_DIRECT_URL = "https://github.com/BayRex1/-pic-Bot/raw/e58a520263f577421ba1025a321c1708cdcc11b5/public/files/WebApp.apk"
+
 # Хранилище для переписки (user_id: message)
 user_conversations = {}
 
@@ -33,6 +37,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 Доступные команды:
 /start - показать это сообщение
 /download - скачать Epic Messenger APK
+/webapp - скачать WebApp версию
 /payment - помочь в развитии Epic Messenger
 /help - связаться с поддержкой
 
@@ -99,6 +104,65 @@ async def download(update: Update, context: ContextTypes.DEFAULT_TYPE):
         logging.error(f"Ошибка при отправке файла: {e}")
         await update.message.reply_text("❌ Произошла ошибка при загрузке файла")
 
+# Функция для команды /webapp
+async def webapp(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    try:
+        # Показываем пользователю, что файл загружается
+        loading_msg = await update.message.reply_text("📥 Загружаем WebApp из GitHub...")
+        
+        # Пробуем первый URL
+        response = requests.get(WEBAPP_RAW_URL, stream=True, timeout=30)
+        
+        # Если первый URL не работает, пробуем альтернативный
+        if response.status_code != 200:
+            response = requests.get(WEBAPP_DIRECT_URL, stream=True, timeout=30)
+        
+        if response.status_code != 200:
+            await loading_msg.delete()
+            await update.message.reply_text("❌ WebApp файл не найден в репозитории. Проверьте ссылку.")
+            return
+            
+        response.raise_for_status()  # Проверяем статус ответа
+        
+        # Создаем временный файл
+        temp_file = "temp_webapp.apk"
+        file_size = 0
+        
+        # Скачиваем файл
+        with open(temp_file, 'wb') as f:
+            for chunk in response.iter_content(chunk_size=8192):
+                if chunk:
+                    f.write(chunk)
+                    file_size += len(chunk)
+        
+        # Удаляем сообщение о загрузке
+        await loading_msg.delete()
+        
+        # Проверяем размер файла (должен быть больше 0)
+        if file_size == 0:
+            raise Exception("Файл пустой или не был загружен")
+        
+        # Отправляем файл пользователю
+        with open(temp_file, 'rb') as f:
+            await update.message.reply_document(
+                document=f,
+                filename='Epic-Messenger-WebApp.apk',
+                caption="🌐 Epic Messenger WebApp\n\nВеб-версия приложения для удобного использования!"
+            )
+        
+        # Удаляем временный файл
+        if os.path.exists(temp_file):
+            os.remove(temp_file)
+            
+        logging.info(f"WebApp успешно загружен из GitHub ({file_size} байт) и отправлен пользователю")
+            
+    except requests.exceptions.RequestException as e:
+        logging.error(f"Ошибка при загрузке WebApp из GitHub: {e}")
+        await update.message.reply_text("❌ Ошибка при загрузке WebApp из репозитория. Попробуйте позже.")
+    except Exception as e:
+        logging.error(f"Ошибка при отправке WebApp: {e}")
+        await update.message.reply_text("❌ Произошла ошибка при загрузке WebApp")
+
 # Функция для команды /ecoin
 async def ecoin(update: Update, context: ContextTypes.DEFAULT_TYPE):
     ecoin_text = """
@@ -151,6 +215,7 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 • Купить Ε-COIN через команду /ecoin
 • Поддержать проект через команду /payment
 • Скачать приложение через команду /download
+• Скачать WebApp через команду /webapp
     """
     await update.message.reply_text(help_text)
 
@@ -269,6 +334,7 @@ def main():
     # Добавляем обработчики команд
     application.add_handler(CommandHandler("start", start))
     application.add_handler(CommandHandler("download", download))
+    application.add_handler(CommandHandler("webapp", webapp))
     application.add_handler(CommandHandler("ecoin", ecoin))
     application.add_handler(CommandHandler("payment", payment))
     application.add_handler(CommandHandler("help", help_command))
